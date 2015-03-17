@@ -10,25 +10,19 @@ and open the template in the editor.
       xmlns:p="http://primefaces.org/ui">
     <h:head>
         <title>Movie Book Worm</title>
-        <script type="text/javascript">
-                    function searchURI(){
-                        window.location.href = "http://localhost:8080/MovieBookREST/webresources/movie?q=" +
-                                 document.getElementById("title").value ;
-                    }
-        </script>
     </h:head>
     <h:body>
         <center style="margin-top: 50px">
             <img src="./images/logo.png"/>
             
-            <h:form id="searchMovieForm" style="margin-top: 50px">
-            <p:panel style="overflow: auto; alignment-adjust: middle" header="SEARCH FOR A FILM">
+            <h:form id="searchMovieForm" style="margin-top: 50px; width: 600px">
+            <p:panel style="overflow: auto; alignment-adjust: middle; background-color: darkorchid" header="SEARCH FOR A FILM">
                 <h:panelGrid columns="3" id="searchEventGrid">
-                    <h:outputLabel for="title">Title:</h:outputLabel>
+                    <h:outputLabel for="title" style="color: magenta"></h:outputLabel>
                     <p:inputText id="title" value="#{searchBean.title}" required="true" requiredMessage="Mandatory"  />
                     <p:message id="titlemsg" for="title" />
                 </h:panelGrid>
-                <p:commandButton id="submit" value="Submit" update="title, titlemsg" onclick="searchURI();" action="#{searchBean.search()}" />
+                <p:commandButton style="margin-top: 10px" id="submit" value="Submit" update="title, titlemsg" action="#{searchBean.search()}" />
             </p:panel>
             <p:blockUI block="searchMovieForm" trigger="submit">
                 LOADING<br />
