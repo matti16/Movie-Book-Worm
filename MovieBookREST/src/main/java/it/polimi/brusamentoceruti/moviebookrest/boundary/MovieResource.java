@@ -6,6 +6,7 @@
 package it.polimi.brusamentoceruti.moviebookrest.boundary;
 
 import it.polimi.brusamentoceruti.moviebookrest.entity.MovieBook;
+import it.polimi.brusamentoceruti.moviebookrest.entity.MoviesResult;
 import java.io.IOException;
 import java.util.List;
 import java.util.logging.Level;
@@ -35,18 +36,24 @@ public class MovieResource {
     @EJB
     MovieRequest movies;
     
-    
+    private static final int DEFAULT_LIMIT = 3;
     
     @GET
-    public MovieBook getMovie(@Context UriInfo info){
+    public MoviesResult getMovie(@Context UriInfo info){
         String p = info.getQueryParameters().getFirst("q");
-        if( p==null ){
+        if( p == null ){
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
+        String limitPar = info.getQueryParameters().getFirst("limit");
+        int limit = DEFAULT_LIMIT;
+        if( limitPar != null ){
+            limit = Integer.parseInt(limitPar);
+        }
+        
         p = p.replaceAll(" ", "%20");
-        MovieBook movie = null;
+        MoviesResult result;
         try {
-            movie = movies.search(p);
+            result = movies.search(p, limit);
         } catch (IOException | JSONException ex) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         } catch(NullPointerException | EJBException n){
@@ -54,10 +61,10 @@ public class MovieResource {
         }
         try{
             List<String> bookLinks = books.getBooks(p);
-            movie.setBooks(bookLinks);
+            result.setBooks(bookLinks);
         }catch(Exception e){}
-        System.out.println(movie.toString());
-        return movie;
+        System.out.println(result.toString());
+        return result;
         
     }
 }

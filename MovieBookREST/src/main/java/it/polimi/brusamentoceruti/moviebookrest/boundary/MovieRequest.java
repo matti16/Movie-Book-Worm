@@ -6,11 +6,10 @@
 package it.polimi.brusamentoceruti.moviebookrest.boundary;
 
 import it.polimi.brusamentoceruti.moviebookrest.entity.MovieBook;
+import it.polimi.brusamentoceruti.moviebookrest.entity.MoviesResult;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.Stateless;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -30,54 +29,61 @@ public class MovieRequest {
     /*abridged_directors = direttori*/
     
     private String movieName;//parametro q dell'url
-    private Integer pageLimit;//risultati per pagina
-    private Integer page;//pagina selezionata
     
     public MovieRequest(){
-        pageLimit=1;
-        page=1;
     }
     
-    public MovieBook search(String title) throws JSONException, IOException{
-        String url = this.createQueryURL(title);
-        MovieBook result = null;
-        result = computeJson(JsonRequest.doQuery(url));
+    public MoviesResult search(String title, int pageLimit) throws JSONException, IOException{
+        String url = this.createQueryURL(title, pageLimit);
+        MoviesResult result;
+        result = computeJson(JsonRequest.doQuery(url), pageLimit);
 
         return result;
     }
     
-    private MovieBook computeJson(JSONObject jSO) throws JSONException, IOException{
+    private MoviesResult computeJson(JSONObject jSO, int pageLimit) throws JSONException, IOException{
         String adjustedUrl;
+        int total = jSO.getInt("total");
+        MoviesResult result = new MoviesResult();
         
-        adjustedUrl = adjustURL(jSO.getJSONArray("movies").getJSONObject(0).getString("id"));
-        jSO = JsonRequest.doQuery(adjustedUrl);
+        result.setSize( (total<pageLimit) ? total : pageLimit);
+        JSONObject partialJSON;
         
-        MovieBook movie = new MovieBook(jSO.getString("title"));
-        
-        movie.setYear(jSO.getString("year"));
-        
-        JSONArray directorsArray = jSO.getJSONArray("abridged_directors");
-        List<String> dirs = new ArrayList<>();
-        for(int i=0; i<directorsArray.length(); i++){
-            dirs.add(directorsArray.getJSONObject(i).getString("name"));
+        for(int i=0; i<result.getSize() ; i++){
+            adjustedUrl = adjustURL(jSO.getJSONArray("movies").getJSONObject(i).getString("id"));
+            partialJSON = JsonRequest.doQuery(adjustedUrl);
+
+            MovieBook movie = new MovieBook(partialJSON.getString("title"));
+
+            movie.setYear(partialJSON.getString("year"));
+            
+            try{
+                JSONArray directorsArray = partialJSON.getJSONArray("abridged_directors");
+                List<String> dirs = new ArrayList<>();
+                for(int j=0; j<directorsArray.length(); ){
+                    dirs.add(directorsArray.getJSONObject(j).getString("name"));
+                    j++;
+                }
+                movie.setDirectors(dirs);
+            }catch(Exception e){}
+
+            movie.setAudience_rating(partialJSON.getJSONObject("ratings").getInt("audience_score"));
+            movie.setCritics_rating(partialJSON.getJSONObject("ratings").getInt("critics_score"));
+            movie.setPoster(partialJSON.getJSONObject("posters").getString("thumbnail"));
+            
+            result.addMovie(movie);
         }
-        movie.setDirectors(dirs);
         
-        movie.setAudience_rating(jSO.getJSONObject("ratings").getInt("audience_score"));
-        movie.setCritics_rating(jSO.getJSONObject("ratings").getInt("critics_score"));
-        movie.setPoster(jSO.getJSONObject("posters").getString("thumbnail"));
-        
-        return movie;
+        return result;
     }
     
-    private String createQueryURL(String qFieldValue){
+    private String createQueryURL(String qFieldValue, int pageLimit){
         movieName = qFieldValue;
         return (queryMovie + opt + movieKey + "&q=" + qFieldValue + 
-                "&page_limit=" + this.pageLimit + "&page=" + this.page);
+                "&page_limit=" + pageLimit);
     }
     
     private String adjustURL(String id){
-        return (queryMovie + "/" + id + opt + movieKey + "&q=" + movieName + 
-                "&page_limit=" + this.pageLimit + "&page=" + this.page);
+        return (queryMovie + "/" + id + opt + movieKey + "&q=" + movieName);
     }
 }
