@@ -25,7 +25,7 @@ public class SearchBean implements Serializable{
     
     private String title;
     
-    private int limit = -1;
+    private int limit = 3;
     
     private static final String baseURL = "http://localhost:8080/MovieBookREST/webresources/movie?q=";
 
